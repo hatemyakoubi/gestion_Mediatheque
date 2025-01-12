@@ -1,0 +1,62 @@
+#docker-compose.yml
+version: "3.8"
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DOCKER_AUTH_TOKEN=${DOCKER_AUTH_TOKEN}
+    container_name: flask-app
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://mongo-db:27017/mediatheque
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    ports:
+      - "5000:5000"
+    networks:
+      - mynetwork
+    volumes:
+      - .:/app
+
+  mongo-db:
+    image: mongo:latest
+    container_name: mongo-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - mynetwork
+    healthcheck:
+      test: mongosh --eval 'db.runCommand("ping").ok' localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo-db
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    networks:
+      - mynetwork
+
+volumes:
+  mongodb_data:
+
+networks:
+  mynetwork:
+    driver: bridge
