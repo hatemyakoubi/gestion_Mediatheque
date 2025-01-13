@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médiathèque - Gestion des Abonnés</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
@@ -133,10 +135,10 @@
         }
 
         async function loadSectionData(section) {
-            switch(section) {
+            switch (section) {
                 case 'subscribers':
                     const subscribers = await fetchData('subscribers');
-                    renderSubscribers(subscribers);
+                    renderSubscribers(subscribers);  // Call renderSubscribers
                     break;
                 case 'documents':
                     const documents = await fetchData('documents');
@@ -149,10 +151,91 @@
             }
         }
 
+
+        function renderDocuments(documents) {
+            const documentsTable = document.getElementById('documentsList');
+            documentsTable.innerHTML = '';
+
+            if (Array.isArray(documents.data)) {
+                documents.data.forEach(document => {
+                    const row = document.createElement('tr');
+
+                    const titleCell = document.createElement('td');
+                    titleCell.textContent = document.title;
+                    row.appendChild(titleCell);
+
+                    const authorCell = document.createElement('td');
+                    authorCell.textContent = document.author;
+                    row.appendChild(authorCell);
+
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = document.type;
+                    row.appendChild(typeCell);
+
+                    const availabilityCell = document.createElement('td');
+                    availabilityCell.textContent = document.available ? 'Disponible' : 'Indisponible';
+                    row.appendChild(availabilityCell);
+
+                    const actionsCell = document.createElement('td');
+                    // Add actions for editing and deleting the document
+                    row.appendChild(actionsCell);
+
+                    documentsTable.appendChild(row);
+                });
+            } else {
+                console.error('Documents data is not an array:', documents);
+            }
+        }
+
+        // Render Subscribers data
+        function renderSubscribers(subscribers) {
+            const subscribersList = document.getElementById('subscribersList');
+            subscribersList.innerHTML = '';  // Clear existing content
+
+            if (subscribers && subscribers.length > 0) {
+                subscribers.forEach(subscriber => {
+                    const row = document.createElement('tr');
+
+                    const nameCell = document.createElement('td');
+                    nameCell.classList.add('p-2');
+                    nameCell.textContent = `${subscriber.first_name} ${subscriber.last_name}`;
+                    row.appendChild(nameCell);
+
+                    const firstNameCell = document.createElement('td');
+                    firstNameCell.classList.add('p-2');
+                    firstNameCell.textContent = subscriber.first_name;
+                    row.appendChild(firstNameCell);
+
+                    const lastNameCell = document.createElement('td');
+                    lastNameCell.classList.add('p-2');
+                    lastNameCell.textContent = subscriber.last_name;
+                    row.appendChild(lastNameCell);
+
+                    const emailCell = document.createElement('td');
+                    emailCell.classList.add('p-2');
+                    emailCell.textContent = subscriber.email;
+                    row.appendChild(emailCell);
+
+                    const actionsCell = document.createElement('td');
+                    actionsCell.classList.add('p-2');
+                    actionsCell.innerHTML = `
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded">Edit</button>
+                <button class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+            `;
+                    row.appendChild(actionsCell);
+
+                    subscribersList.appendChild(row);
+                });
+            } else {
+                subscribersList.innerHTML = '<tr><td colspan="4" class="p-2 text-center">No subscribers found</td></tr>';
+            }
+        }
+
         // Initialize application
         document.addEventListener('DOMContentLoaded', () => {
             showSection('subscribers');
         });
     </script>
 </body>
+
 </html>

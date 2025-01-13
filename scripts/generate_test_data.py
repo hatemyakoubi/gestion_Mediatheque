@@ -9,7 +9,8 @@ import bcrypt
 fake = Faker()
 
 # Connect to MongoDB
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb://mongo-db:27017/')
+
 db = client['mediatheque']
 
 def generate_users():
@@ -93,7 +94,7 @@ def generate_books():
             "isbn": fake.isbn13(),
             "publisher": random.choice(publishers),
             "language": random.choice(languages),
-            "publication_date": publication_date,
+            "publication_date": datetime.combine(publication_date, datetime.min.time()),  # Convert to datetime
             "genre": random.choice(genres),
             "description": fake.text(max_nb_chars=200),
             "pages": random.randint(100, 800),

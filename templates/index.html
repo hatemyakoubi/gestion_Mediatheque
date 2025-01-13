@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médiathèque - Gestion des Abonnés</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-blue-600 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
@@ -31,9 +33,10 @@
                 <table class="w-full">
                     <thead>
                         <tr class="border-b">
-                            <th class="text-left p-2">Nom</th>
-                            <th class="text-left p-2">Prénom</th>
-                            <th class="text-left p-2">Email</th>
+                            <th class="text-left p-2">First Name</th>
+                            <th class="text-left p-2">Last Name</th>
+                            <th class="text-left p-2">Role</th>
+                            <th class="text-left p-2">phone</th>
                             <th class="text-left p-2">Actions</th>
                         </tr>
                     </thead>
@@ -104,6 +107,21 @@
             <!-- Modal content will be injected here -->
         </div>
     </div>
+    <!-- Subscriber Details Modal -->
+<!-- Modal content (updated) -->
+<div id="subscriberDetailsModal" class="hidden fixed inset-0 z-50 flex justify-center items-center">
+    <div class="modal-content bg-white p-4 rounded-md shadow-lg relative">
+        <!-- Close button (X) -->
+        <button onclick="closeModal()" class="absolute top-2 right-2 text-red-500 text-xl font-bold">&times;</button>
+
+        <!-- Modal content goes here -->
+        <div id="subscriberDetailsContent">
+            <!-- Dynamic subscriber details will be populated here -->
+        </div>
+    </div>
+</div>
+
+
 
     <script>
         // Utility functions
@@ -133,10 +151,10 @@
         }
 
         async function loadSectionData(section) {
-            switch(section) {
+            switch (section) {
                 case 'subscribers':
                     const subscribers = await fetchData('subscribers');
-                    renderSubscribers(subscribers);
+                    renderSubscribers(subscribers);  // Call renderSubscribers
                     break;
                 case 'documents':
                     const documents = await fetchData('documents');
@@ -149,10 +167,150 @@
             }
         }
 
+
+        function renderDocuments(documents) {
+            const documentsTable = document.getElementById('documentsList');
+            documentsTable.innerHTML = '';
+
+            if (Array.isArray(documents.data)) {
+                documents.data.forEach(document => {
+                    const row = document.createElement('tr');
+
+                    const titleCell = document.createElement('td');
+                    titleCell.textContent = document.title;
+                    row.appendChild(titleCell);
+
+                    const authorCell = document.createElement('td');
+                    authorCell.textContent = document.author;
+                    row.appendChild(authorCell);
+
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = document.type;
+                    row.appendChild(typeCell);
+
+                    const availabilityCell = document.createElement('td');
+                    availabilityCell.textContent = document.available ? 'Disponible' : 'Indisponible';
+                    row.appendChild(availabilityCell);
+
+                    const actionsCell = document.createElement('td');
+                    // Add actions for editing and deleting the document
+                    row.appendChild(actionsCell);
+
+                    documentsTable.appendChild(row);
+                });
+            } else {
+                console.error('Documents data is not an array:', documents);
+            }
+        }
+
+        // Render Subscribers data
+        function renderSubscribers(subscribers) {
+    const subscribersList = document.getElementById('subscribersList');
+    subscribersList.innerHTML = '';  // Clear existing content
+
+    if (subscribers && subscribers.length > 0) {
+        subscribers.forEach(subscriber => {
+            const row = document.createElement('tr');
+
+            const nameCell = document.createElement('td');
+            nameCell.classList.add('p-2');
+            nameCell.textContent = subscriber.first_name;
+            row.appendChild(nameCell);
+
+            const firstNameCell = document.createElement('td');
+            firstNameCell.classList.add('p-2');
+            firstNameCell.textContent = subscriber.last_name;
+            row.appendChild(firstNameCell);
+
+            const lastNameCell = document.createElement('td');
+            lastNameCell.classList.add('p-2');
+            lastNameCell.textContent = subscriber.phone;
+            row.appendChild(lastNameCell);
+
+            const emailCell = document.createElement('td');
+            emailCell.classList.add('p-2');
+            emailCell.textContent = subscriber.email;
+            row.appendChild(emailCell);
+
+            const actionsCell = document.createElement('td');
+            actionsCell.classList.add('p-2');
+            actionsCell.innerHTML = `
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded">Edit</button>
+                <button class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+                <button onclick="showSubscriberDetails(${JSON.stringify(subscriber).replace(/"/g, '&quot;')})" class="bg-blue-500 text-white px-4 py-2 rounded">
+                    Voir Détails
+                </button>
+            `;
+            row.appendChild(actionsCell);
+
+            subscribersList.appendChild(row);
+        });
+    } else {
+        subscribersList.innerHTML = '<tr><td colspan="4" class="p-2 text-center">No subscribers found</td></tr>';
+    }
+}
+
+
+       // Function to display subscriber details
+function showSubscriberDetails(subscriber) {
+    const modal = document.getElementById('subscriberDetailsModal');
+    const content = document.getElementById('subscriberDetailsContent');
+
+    // Format the current loans into a readable format
+    let currentLoansHtml = '';
+    subscriber.current_loans.forEach(loan => {
+        currentLoansHtml += `
+            <div class="border-b py-2">
+                <p><strong>Document ID:</strong> ${loan.document_id}</p>
+                <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleString()}</p>
+                <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleString()}</p>
+                <p><strong>Status:</strong> ${loan.status}</p>
+            </div>
+        `;
+    });
+
+    // Populate the modal with subscriber details
+    content.innerHTML = `
+        <p><strong>Nom:</strong> ${subscriber.last_name}</p>
+        <p><strong>Prénom:</strong> ${subscriber.first_name}</p>
+        <p><strong>Email:</strong> ${subscriber.email}</p>
+        <p><strong>Adresse:</strong> ${subscriber.address}</p>
+        <p><strong>Téléphone:</strong> ${subscriber.phone}</p>
+        <p><strong>Date d'inscription:</strong> ${new Date(subscriber.inscription_date).toLocaleDateString()}</p>
+        
+        <h4 class="font-bold mt-4">Emprunts Actuels:</h4>
+        ${currentLoansHtml ? currentLoansHtml : '<p>Aucun emprunt actuel.</p>'}
+        
+        <h4 class="font-bold mt-4">Historique des Emprunts:</h4>
+        ${subscriber.loan_history.length > 0 ? subscriber.loan_history.map(loan => {
+            return `
+                <div class="border-b py-2">
+                    <p><strong>Document ID:</strong> ${loan.document_id}</p>
+                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleString()}</p>
+                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleString()}</p>
+                    <p><strong>Status:</strong> ${loan.status}</p>
+                </div>
+            `;
+        }).join('') : '<p>Aucun historique d\'emprunts.</p>'}
+    `;
+
+    // Show the modal
+    modal.classList.remove('hidden');
+}
+
+// Function to close the modal
+function closeModal() {
+    const modal = document.getElementById('subscriberDetailsModal');
+    modal.classList.add('hidden');
+}
+
+
+
         // Initialize application
         document.addEventListener('DOMContentLoaded', () => {
             showSection('subscribers');
         });
     </script>
 </body>
+
 </html>

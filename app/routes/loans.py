@@ -3,13 +3,13 @@ from flask import Blueprint, request, jsonify
 from bson import ObjectId
 from datetime import datetime, timedelta
 from app.schemas import LoanSchema
-from app.auth import requires_auth
+#from app.auth import #@requires_auth
 from app import mongo
 
 bp = Blueprint('loans', __name__)
 
 @bp.route('/', methods=['GET'])
-@requires_auth
+#@requires_auth
 def get_loans():
     try:
         # Add support for pagination and filtering
@@ -41,7 +41,7 @@ def get_loans():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>', methods=['GET'])
-@requires_auth
+#@requires_auth
 def get_loan(id):
     try:
         loan = mongo.db.loans.find_one({'_id': ObjectId(id)})
@@ -52,7 +52,7 @@ def get_loan(id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/', methods=['POST'])
-@requires_auth
+#@requires_auth
 def create_loan():
     try:
         data = LoanSchema.load(request.json)
@@ -104,7 +104,7 @@ def create_loan():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>/return', methods=['POST'])
-@requires_auth
+#@requires_auth
 def return_loan(id):
     try:
         loan = mongo.db.loans.find_one({'_id': ObjectId(id)})
@@ -145,7 +145,7 @@ def return_loan(id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>/extend', methods=['POST'])
-@requires_auth
+#@requires_auth
 def extend_loan(id):
     try:
         loan = mongo.db.loans.find_one({'_id': ObjectId(id)})

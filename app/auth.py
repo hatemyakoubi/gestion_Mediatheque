@@ -13,7 +13,7 @@ class AuthError(Exception):
         self.error = error
         self.status_code = status_code
 
-def create_token(user_id):
+'''def create_token(user_id):
     return jwt.encode(
         {
             'user_id': str(user_id),
@@ -21,7 +21,7 @@ def create_token(user_id):
         },
         SECRET_KEY,
         algorithm='HS256'
-    )
+    )'''
 
 def requires_auth(f):
     @wraps(f)

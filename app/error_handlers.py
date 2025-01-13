@@ -1,9 +1,9 @@
-# error_handlers.py
+# app/error_handlers.py
 from flask import jsonify, request
 from marshmallow import ValidationError
 from bson.errors import InvalidId
 from pymongo.errors import DuplicateKeyError, PyMongoError
-from app.auth import AuthError
+from app.auth import AuthError  # Importing AuthError from auth.py
 
 def register_error_handlers(app):
     @app.errorhandler(ValidationError)
@@ -57,18 +57,12 @@ def register_error_handlers(app):
     @app.errorhandler(Exception)
     def handle_generic_error(error):
         """Handle any unhandled exceptions"""
-        # Log the error here if you have logging configured
         return jsonify({
             'error': 'Internal server error',
             'message': 'An unexpected error occurred'
         }), 500
 
     # Custom error handler for authentication errors
-    class AuthError(Exception):
-        def __init__(self, error, status_code):
-            self.error = error
-            self.status_code = status_code
-
     @app.errorhandler(AuthError)
     def handle_auth_error(error):
         """Handle authentication errors"""

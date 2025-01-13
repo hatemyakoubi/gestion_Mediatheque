@@ -21,6 +21,23 @@ services:
       - mynetwork
     volumes:
       - .:/app
+  web:
+    image: python:3.9-slim
+    container_name: web
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - MONGO_URI=mongodb://mongo-db:27017/mediatheque
+    networks:
+      - mynetwork
+    command: ["tail", "-f", "/dev/null"] 
+    build:
+      context: .
+      dockerfile: Dockerfile
 
   mongo-db:
     image: mongo:latest

@@ -1,40 +1,53 @@
 # app/routes/subscribers.py
 from flask import Blueprint, request, jsonify
 from bson import ObjectId
-from datetime import datetime
-from app.auth import requires_auth
+from datetime import datetime, timezone
+from marshmallow.exceptions import ValidationError
+#from app.auth import requires_auth
 from app import mongo
 from app.schemas import SubscriberSchema
 
 bp = Blueprint('subscribers', __name__)
 
+# Default pagination values
+DEFAULT_PAGE = 1
+DEFAULT_PER_PAGE = 10
+
+# Custom error handler for exceptions
+@bp.errorhandler(Exception)
+def handle_exception(e):
+    return jsonify({'error': str(e)}), 500
+
 @bp.route('/', methods=['GET'])
-@requires_auth
+#@requires_auth
 def get_subscribers():
     try:
-        # Add support for pagination
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
+        page = int(request.args.get('page', DEFAULT_PAGE))
+        per_page = int(request.args.get('per_page', DEFAULT_PER_PAGE))
         skip = (page - 1) * per_page
 
-        # Get total count for pagination
         total = mongo.db.subscribers.count_documents({})
-        
-        # Get subscribers with pagination
+        print(f"Total subscribers: {total}")  # Debug statement
         subscribers = list(mongo.db.subscribers.find().skip(skip).limit(per_page))
         
+        # Pagination flags
+        has_next = page < (total + per_page - 1) // per_page
+        has_prev = page > 1
+
         return jsonify({
             'data': SubscriberSchema.dump(subscribers, many=True),
             'total': total,
             'page': page,
             'per_page': per_page,
-            'total_pages': (total + per_page - 1) // per_page
+            'total_pages': (total + per_page - 1) // per_page,
+            'has_next': has_next,
+            'has_prev': has_prev
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>', methods=['GET'])
-@requires_auth
+#@requires_auth
 def get_subscriber(id):
     try:
         subscriber = mongo.db.subscribers.find_one({'_id': ObjectId(id)})
@@ -45,13 +58,13 @@ def get_subscriber(id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/', methods=['POST'])
-@requires_auth
+#@requires_auth
 def create_subscriber():
     try:
         data = SubscriberSchema.load(request.json)
         
         # Add creation timestamp and initialize lists
-        data['inscription_date'] = datetime.utcnow()
+        data['inscription_date'] = datetime.now(timezone.utc).isoformat()
         data['current_loans'] = []
         data['loan_history'] = []
         
@@ -68,11 +81,13 @@ def create_subscriber():
             'message': 'Subscriber created successfully',
             'data': SubscriberSchema.dump(subscriber)
         }), 201
+    except ValidationError as err:
+        return jsonify({'validation_errors': err.messages}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>', methods=['PUT'])
-@requires_auth
+#@requires_auth
 def update_subscriber(id):
     try:
         data = SubscriberSchema.load(request.json)
@@ -97,11 +112,13 @@ def update_subscriber(id):
             'message': 'Subscriber updated successfully',
             'data': SubscriberSchema.dump(subscriber)
         })
+    except ValidationError as err:
+        return jsonify({'validation_errors': err.messages}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/<id>', methods=['DELETE'])
-@requires_auth
+#@requires_auth
 def delete_subscriber(id):
     try:
         # Check if subscriber has active loans
