@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médiathèque - Gestion des Abonnés</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+
 </head>
 
 <body class="bg-gray-100">
@@ -28,6 +29,12 @@
                 <button onclick="showModal('subscriberForm')" class="bg-blue-500 text-white px-4 py-2 rounded">
                     Nouvel Abonné
                 </button>
+                <!-- Modal -->
+                <div id="modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+                    <div id="modalContent" class="bg-white p-6 rounded shadow-lg w-1/3">
+                        <!-- Dynamic content will be injected here -->
+                    </div>
+                </div>
             </div>
             <div class="bg-white shadow rounded-lg p-4">
                 <table class="w-full">
@@ -108,18 +115,18 @@
         </div>
     </div>
     <!-- Subscriber Details Modal -->
-<!-- Modal content (updated) -->
-<div id="subscriberDetailsModal" class="hidden fixed inset-0 z-50 flex justify-center items-center">
-    <div class="modal-content bg-white p-4 rounded-md shadow-lg relative">
-        <!-- Close button (X) -->
-        <button onclick="closeModal()" class="absolute top-2 right-2 text-red-500 text-xl font-bold">&times;</button>
+    <div id="subscriberDetailsModal" class="hidden fixed inset-0 z-50 flex justify-center items-center">
+        <div class="modal-content bg-white p-4 rounded-md shadow-lg relative">
+            <!-- Close button (X) -->
+            <button onclick="closeModal()"
+                class="absolute top-2 right-2 text-red-500 text-xl font-bold">&times;</button>
 
-        <!-- Modal content goes here -->
-        <div id="subscriberDetailsContent">
-            <!-- Dynamic subscriber details will be populated here -->
+            <!-- Modal content goes here -->
+            <div id="subscriberDetailsContent">
+                <!-- Dynamic subscriber details will be populated here -->
+            </div>
         </div>
     </div>
-</div>
 
 
 
@@ -133,11 +140,90 @@
             loadSectionData(sectionId);
         }
 
+        // Function to show a modal and dynamically inject a form based on the formId
         function showModal(formId) {
             const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modalContent'); // Ensure this element exists in your modal
             modal.classList.remove('hidden');
-            // Inject appropriate form based on formId
+
+            // Clear any existing content in the modal
+            modalContent.innerHTML = '';
+
+            // Dynamically inject the form based on formId
+            if (formId === 'subscriberForm') {
+                modalContent.innerHTML = `
+            <h2 class="text-lg font-bold mb-4">Créer un Nouvel Abonné</h2>
+            <form id="createSubscriberForm" class="space-y-4 method="POST">
+                <div>
+                    <label for="subscriberFirstName" class="block font-medium text-gray-700">First Name</label>
+                    <input type="text" id="subscriberFirstName" name="subscriberFirstName" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div>
+                    <label for="subscriberLastName" class="block font-medium text-gray-700">Last Name</label>
+                    <input type="text" id="subscriberLastName" name="subscriberLastName" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div>
+                    <label for="subscriberEmail" class="block font-medium text-gray-700">Email</label>
+                    <input type="email" id="subscriberEmail" name="subscriberEmail" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div>
+                    <label for="subscriberAdress" class="block font-medium text-gray-700">Adress</label>
+                    <input type="text" id="subscriberAdress" name="subscriberAdress" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div>
+                    <label for="subscriberPhone" class="block font-medium text-gray-700">Phone</label>
+                    <input type="text" id="subscriberPhone" name="subscriberPhone" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" class="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2" onclick="closeInsertSubscriberModal()">Annuler</button>
+                    <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" onclick="submitSubscriberForm()">Créer</button>
+
+                </div>
+            </form>
+        `;
+            }
         }
+
+        function submitSubscriberForm() {
+            const form = document.getElementById('createSubscriberForm');
+
+            // Collect form data
+            const subscriberData = {
+                first_name: form.subscriberFirstName.value,
+                last_name: form.subscriberLastName.value,
+                email: form.subscriberEmail.value,
+                address: form.subscriberAdress.value,
+                phone: form.subscriberPhone.value,
+            };
+
+            // Send a POST request to the server
+            fetch('/api/subscribers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(subscriberData),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('Failed to add subscriber');
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    alert(`Subscriber added successfully with ID: ${data.id}`);
+                    closeInsertSubscriberModal(); // Close the modal after success
+                })
+                .catch((error) => {
+                    alert(`Error: ${error.message}`);
+                });
+        }
+        // Function to hide the modal
+        function closeInsertSubscriberModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+        }
+
 
         // API calls
         async function fetchData(endpoint) {
@@ -205,61 +291,61 @@
 
         // Render Subscribers data
         function renderSubscribers(subscribers) {
-    const subscribersList = document.getElementById('subscribersList');
-    subscribersList.innerHTML = '';  // Clear existing content
+            const subscribersList = document.getElementById('subscribersList');
+            subscribersList.innerHTML = '';  // Clear existing content
 
-    if (subscribers && subscribers.length > 0) {
-        subscribers.forEach(subscriber => {
-            const row = document.createElement('tr');
+            if (subscribers && subscribers.length > 0) {
+                subscribers.forEach(subscriber => {
+                    const row = document.createElement('tr');
 
-            const nameCell = document.createElement('td');
-            nameCell.classList.add('p-2');
-            nameCell.textContent = subscriber.first_name;
-            row.appendChild(nameCell);
+                    const nameCell = document.createElement('td');
+                    nameCell.classList.add('p-2');
+                    nameCell.textContent = subscriber.first_name;
+                    row.appendChild(nameCell);
 
-            const firstNameCell = document.createElement('td');
-            firstNameCell.classList.add('p-2');
-            firstNameCell.textContent = subscriber.last_name;
-            row.appendChild(firstNameCell);
+                    const firstNameCell = document.createElement('td');
+                    firstNameCell.classList.add('p-2');
+                    firstNameCell.textContent = subscriber.last_name;
+                    row.appendChild(firstNameCell);
 
-            const lastNameCell = document.createElement('td');
-            lastNameCell.classList.add('p-2');
-            lastNameCell.textContent = subscriber.phone;
-            row.appendChild(lastNameCell);
+                    const lastNameCell = document.createElement('td');
+                    lastNameCell.classList.add('p-2');
+                    lastNameCell.textContent = subscriber.phone;
+                    row.appendChild(lastNameCell);
 
-            const emailCell = document.createElement('td');
-            emailCell.classList.add('p-2');
-            emailCell.textContent = subscriber.email;
-            row.appendChild(emailCell);
+                    const emailCell = document.createElement('td');
+                    emailCell.classList.add('p-2');
+                    emailCell.textContent = subscriber.email;
+                    row.appendChild(emailCell);
 
-            const actionsCell = document.createElement('td');
-            actionsCell.classList.add('p-2');
-            actionsCell.innerHTML = `
+                    const actionsCell = document.createElement('td');
+                    actionsCell.classList.add('p-2');
+                    actionsCell.innerHTML = `
                 <button class="bg-yellow-500 text-white px-4 py-2 rounded">Edit</button>
                 <button class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
                 <button onclick="showSubscriberDetails(${JSON.stringify(subscriber).replace(/"/g, '&quot;')})" class="bg-blue-500 text-white px-4 py-2 rounded">
                     Voir Détails
                 </button>
             `;
-            row.appendChild(actionsCell);
+                    row.appendChild(actionsCell);
 
-            subscribersList.appendChild(row);
-        });
-    } else {
-        subscribersList.innerHTML = '<tr><td colspan="4" class="p-2 text-center">No subscribers found</td></tr>';
-    }
-}
+                    subscribersList.appendChild(row);
+                });
+            } else {
+                subscribersList.innerHTML = '<tr><td colspan="4" class="p-2 text-center">No subscribers found</td></tr>';
+            }
+        }
 
 
-       // Function to display subscriber details
-function showSubscriberDetails(subscriber) {
-    const modal = document.getElementById('subscriberDetailsModal');
-    const content = document.getElementById('subscriberDetailsContent');
+        // Function to display subscriber details
+        function showSubscriberDetails(subscriber) {
+            const modal = document.getElementById('subscriberDetailsModal');
+            const content = document.getElementById('subscriberDetailsContent');
 
-    // Format the current loans into a readable format
-    let currentLoansHtml = '';
-    subscriber.current_loans.forEach(loan => {
-        currentLoansHtml += `
+            // Format the current loans into a readable format
+            let currentLoansHtml = '';
+            subscriber.current_loans.forEach(loan => {
+                currentLoansHtml += `
             <div class="border-b py-2">
                 <p><strong>Document ID:</strong> ${loan.document_id}</p>
                 <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleString()}</p>
@@ -267,10 +353,10 @@ function showSubscriberDetails(subscriber) {
                 <p><strong>Status:</strong> ${loan.status}</p>
             </div>
         `;
-    });
+            });
 
-    // Populate the modal with subscriber details
-    content.innerHTML = `
+            // Populate the modal with subscriber details
+            content.innerHTML = `
         <p><strong>Nom:</strong> ${subscriber.last_name}</p>
         <p><strong>Prénom:</strong> ${subscriber.first_name}</p>
         <p><strong>Email:</strong> ${subscriber.email}</p>
@@ -283,7 +369,7 @@ function showSubscriberDetails(subscriber) {
         
         <h4 class="font-bold mt-4">Historique des Emprunts:</h4>
         ${subscriber.loan_history.length > 0 ? subscriber.loan_history.map(loan => {
-            return `
+                return `
                 <div class="border-b py-2">
                     <p><strong>Document ID:</strong> ${loan.document_id}</p>
                     <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleString()}</p>
@@ -291,18 +377,18 @@ function showSubscriberDetails(subscriber) {
                     <p><strong>Status:</strong> ${loan.status}</p>
                 </div>
             `;
-        }).join('') : '<p>Aucun historique d\'emprunts.</p>'}
+            }).join('') : '<p>Aucun historique d\'emprunts.</p>'}
     `;
 
-    // Show the modal
-    modal.classList.remove('hidden');
-}
+            // Show the modal
+            modal.classList.remove('hidden');
+        }
 
-// Function to close the modal
-function closeModal() {
-    const modal = document.getElementById('subscriberDetailsModal');
-    modal.classList.add('hidden');
-}
+        // Function to close the modal
+        function closeModal() {
+            const modal = document.getElementById('subscriberDetailsModal');
+            modal.classList.add('hidden');
+        }
 
 
 

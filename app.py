@@ -8,6 +8,7 @@ from app.error_handlers import register_error_handlers
 from bson import ObjectId
 from datetime import datetime, timedelta
 from pymongo import MongoClient
+from flask import request, jsonify
 
 app = Flask(__name__)
 CORS(app)
@@ -17,13 +18,7 @@ mongo = PyMongo(app)
 
 client = MongoClient("mongodb://mongo-db:27017/")
 db = client.mediatheque
-# Fetch all subscribers
-#subscribers = list(db.subscribers.find())
 
-#for subscriber in subscribers:
-#    print("****")
-#    print(subscriber)
-#    print("****")
 # Initialize database with indexes
 init_db(mongo)
 
@@ -73,18 +68,21 @@ def get_subscribers():
 
 
 @app.route('/api/subscribers', methods=['POST'])
-#@requires_auth
 def add_subscriber():
-    data = subscriber_schema.load(request.json)
-    data['inscription_date'] = datetime.utcnow()
-    data['current_loans'] = []
-    data['loan_history'] = []
-    
-    result = mongo.db.subscribers.insert_one(data)
-    return jsonify({
-        "message": "Subscriber added successfully",
-        "id": str(result.inserted_id)
-    }), 201
+    try:
+        data = request.json
+        data['inscription_date'] = datetime.utcnow()
+        data['current_loans'] = []
+        data['loan_history'] = []
+        
+        result = mongo.db.subscribers.insert_one(data)
+        return jsonify({
+            "message": "Subscriber added successfully",
+            "id": str(result.inserted_id)
+        }), 201
+    except Exception as e:
+        return jsonify({"message": "Failed to add subscriber", "error": str(e)}), 400
+
 
 @app.route('/api/documents/', methods=['GET'])
 #@requires_auth
