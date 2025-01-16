@@ -35,7 +35,6 @@ register_error_handlers(app)
 def index():
     return render_template('index.html')
 
-
 def convert_objectid(obj):
     """Recursively convert ObjectId to string in nested documents."""
     if isinstance(obj, list):
@@ -65,8 +64,6 @@ def get_subscribers():
         print(f"Error in get_subscribers: {e}")
         return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
-
-
 @app.route('/api/subscribers', methods=['POST'])
 def add_subscriber():
     try:
@@ -83,15 +80,79 @@ def add_subscriber():
     except Exception as e:
         return jsonify({"message": "Failed to add subscriber", "error": str(e)}), 400
 
+@app.route('/api/subscribers/<subscriber_id>', methods=['DELETE'])
+def delete_subscriber(subscriber_id):
+    try:
+        result = mongo.db.subscribers.delete_one({"_id": ObjectId(subscriber_id)})
+        if result.deleted_count == 1:
+            return jsonify({"message": "Subscriber deleted successfully"}), 200
+        else:
+            return jsonify({"message": "Subscriber not found"}), 404
+    except Exception as e:
+        return jsonify({"error": "Failed to delete subscriber", "message": str(e)}), 400
+
+@app.route('/api/subscribers/<subscriber_id>', methods=['PUT'])
+def update_subscriber(subscriber_id):
+    try:
+        data = request.json
+        mongo.db.subscribers.update_one(
+            {"_id": ObjectId(subscriber_id)},
+            {"$set": {
+                "first_name": data.get("first_name"),
+                "last_name": data.get("last_name"),
+                "email": data.get("email"),
+                "address": data.get("address"),
+                "phone": data.get("phone")
+            }}
+        )
+        return jsonify({"message": "Subscriber updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to update subscriber", "error": str(e)}), 400
+
+@app.route('/api/subscribers/<subscriber_id>', methods=['GET'])
+def get_subscriber(subscriber_id):
+    try:
+        subscriber = mongo.db.subscribers.find_one({"_id": ObjectId(subscriber_id)})
+        if not subscriber:
+            return jsonify({"message": "Subscriber not found"}), 404
+        
+        # Convert ObjectId to string
+        subscriber = convert_objectid(subscriber)
+        
+        return jsonify(subscriber), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch subscriber", "error": str(e)}), 400
 
 @app.route('/api/documents/', methods=['GET'])
-#@requires_auth
 def get_documents():
-    documents = list(mongo.db.documents.find())
-    return jsonify(document_schema.dump(documents, many=True))
+    # Get query parameters for pagination (default to page 1 and 10 items per page)
+    page = int(request.args.get('page', 1))  # Default to page 1
+    per_page = int(request.args.get('per_page', 10))  # Default to 10 items per page
+
+    # Calculate the skip value
+    skip = (page - 1) * per_page
+
+    # Query documents with pagination
+    documents = list(mongo.db.documents.find().skip(skip).limit(per_page))
+
+    # Get the total number of documents
+    total_documents = mongo.db.documents.count_documents({})
+
+    # Prepare pagination metadata
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total_documents': total_documents
+    }
+
+    # Return the documents and pagination metadata
+    return jsonify({
+        'documents': document_schema.dump(documents, many=True),
+        'pagination': pagination
+    })
+
 
 @app.route('/api/documents', methods=['POST'])
-#@requires_auth
 def add_document():
     data = document_schema.load(request.json)
     data['available'] = True

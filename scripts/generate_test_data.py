@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 import random
 import bcrypt
-
+from bson.objectid import ObjectId
 # Initialize Faker
 fake = Faker()
 
@@ -17,6 +17,7 @@ def generate_users():
     """Generate 4 fake user accounts"""
     users = [
         {
+            "_id": ObjectId(),
             "first_name": "Admin",
             "last_name": "User",
             "email": "admin@mediatheque.com",
@@ -29,6 +30,7 @@ def generate_users():
             "loan_history": []
         },
         {
+            "_id": ObjectId(),
             "first_name": "John",
             "last_name": "Doe",
             "email": "john.doe@mediatheque.com",
@@ -41,6 +43,7 @@ def generate_users():
             "loan_history": []
         },
         {
+            "_id": ObjectId(),
             "first_name": "Jane",
             "last_name": "Smith",
             "email": "jane.smith@mediatheque.com",
@@ -53,6 +56,7 @@ def generate_users():
             "loan_history": []
         },
         {
+            "_id": ObjectId(),
             "first_name": "Robert",
             "last_name": "Johnson",
             "email": "robert.johnson@mediatheque.com",
