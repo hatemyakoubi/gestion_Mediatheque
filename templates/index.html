@@ -31,8 +31,9 @@
                     Nouvel Abonné
                 </button>
                 <!-- Modal -->
-                <div id="modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
-                    <div id="modalContent" class="bg-white p-6 rounded shadow-lg w-1/3">
+                <div id="subscriberFormModal"
+                    class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+                    <div id="subscriberModalContent" class="bg-white p-6 rounded shadow-lg w-1/3">
                         <!-- Dynamic content will be injected here -->
                     </div>
                 </div>
@@ -104,6 +105,7 @@
                     Nouveau Document
                 </button>
             </div>
+            <!-- Document List -->
             <div class="bg-white shadow rounded-lg p-4">
                 <table class="w-full">
                     <thead>
@@ -111,6 +113,8 @@
                             <th class="text-left p-2">Titre</th>
                             <th class="text-left p-2">Auteur</th>
                             <th class="text-left p-2">Type</th>
+                            <th class="text-left p-2">ISBN</th>
+                            <th class="text-left p-2">Année</th>
                             <th class="text-left p-2">Disponibilité</th>
                             <th class="text-left p-2">Actions</th>
                         </tr>
@@ -119,13 +123,58 @@
                         <!-- Filled dynamically -->
                     </tbody>
                 </table>
-            </div>
-            <div id="pagination" class="mt-4 flex justify-center space-x-2">
-                <button id="prevPage" onclick="fetchDocuments(currentPage - 1)" class="bg-blue-500 text-white px-4 py-2 rounded" disabled>Previous</button>
-                <button id="nextPage" onclick="fetchDocuments(currentPage + 1)" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+                <div id="documentPagination" class="mt-4 flex justify-center space-x-2">
+                    <!-- Pagination controls will be added here -->
+                </div>
             </div>
 
+            <div id="documentFormModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
+                <div id="documentModalContent" class="bg-white p-6 rounded shadow-lg w-1/3">
+                    <!-- Dynamic content will be injected here -->
+                </div>
+            </div>
+
+            <!-- Document Edit Modal -->
+            <div id="editDocumentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+                <div class="bg-white rounded-lg p-4 max-w-lg mx-auto mt-20">
+                    <h2 class="text-lg font-bold mb-4">Edit Document</h2>
+                    <form id="editDocumentForm" class="space-y-4">
+                        <div>
+                            <label class="block font-medium text-gray-700">Titre</label>
+                            <input type="text" id="editDocTitle" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Auteur</label>
+                            <input type="text" id="editDocAuthor" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Type</label>
+                            <select id="editDocType" class="w-full border rounded px-3 py-2">
+                                <option value="book">Livre</option>
+                                <option value="magazine">Magazine</option>
+                                <option value="cd">CD</option>
+                                <option value="dvd">DVD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">ISBN</label>
+                            <input type="text" id="editDocISBN" class="w-full border rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Année de publication</label>
+                            <input type="number" id="editDocYear" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" onclick="closeEditDocumentModal()"
+                                class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
+                            <button type="button" onclick="updateDocument()"
+                                class="bg-blue-500 text-white px-4 py-2 rounded">Mettre à jour</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </section>
+
 
         <!-- Loans Section -->
         <section id="loans" class="hidden space-y-4">
@@ -142,8 +191,8 @@
                             <th class="text-left p-2">Abonné</th>
                             <th class="text-left p-2">Document</th>
                             <th class="text-left p-2">Date d'emprunt</th>
-                            <th class="text-left p-2">Date de retour</th>
-                            <th class="text-left p-2">Status</th>
+                            <th class="text-left p-2">Date de retour prévue</th>
+                            <th class="text-left p-2">Statut</th>
                             <th class="text-left p-2">Actions</th>
                         </tr>
                     </thead>
@@ -152,8 +201,34 @@
                     </tbody>
                 </table>
             </div>
-        </section>
 
+            <!-- Loan Form Modal -->
+            <div id="loanFormModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+                <div class="bg-white rounded-lg p-4 max-w-lg mx-auto mt-20">
+                    <h2 class="text-lg font-bold mb-4">Nouvel Emprunt</h2>
+                    <form id="newLoanForm" class="space-y-4">
+                        <div>
+                            <label class="block font-medium text-gray-700">Abonné</label>
+                            <select id="loanSubscriber" class="w-full border rounded px-3 py-2" required>
+                                <!-- Filled dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Document</label>
+                            <select id="loanDocument" class="w-full border rounded px-3 py-2" required>
+                                <!-- Filled dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex justify-end space-x-2">
+                            <button type="button" onclick="closeLoanModal()"
+                                class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
+                            <button type="button" onclick="createLoan()"
+                                class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
 
     </main>
 
@@ -167,7 +242,7 @@
     <div id="subscriberDetailsModal" class="hidden fixed inset-0 z-50 flex justify-center items-center">
         <div class="modal-content bg-white p-4 rounded-md shadow-lg relative">
             <!-- Close button (X) -->
-            <button onclick="closeModal()"
+            <button onclick="closeSubscriberDetailModal()"
                 class="absolute top-2 right-2 text-red-500 text-xl font-bold">&times;</button>
 
             <!-- Modal content goes here -->
@@ -178,26 +253,13 @@
     </div>
 
     <script>
-        // Utility functions
-        function showSection(sectionId) {
-            document.querySelectorAll('main section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            document.getElementById(sectionId).classList.remove('hidden');
-            loadSectionData(sectionId);
-        }
 
         // Function to show a modal and dynamically inject a form based on the formId
-        function showModal(formId) {
-            const modal = document.getElementById('modal');
-            const modalContent = document.getElementById('modalContent'); // Ensure this element exists in your modal
-            modal.classList.remove('hidden');
-
+        function showModalSubscriberForm(modalContent) {
             // Clear any existing content in the modal
             modalContent.innerHTML = '';
 
             // Dynamically inject the form based on formId
-            if (formId === 'subscriberForm') {
                 modalContent.innerHTML = `
             <h2 class="text-lg font-bold mb-4">New subscriber</h2>
             <form id="createSubscriberForm" class="space-y-4 method="POST">
@@ -222,13 +284,13 @@
                     <input type="text" id="subscriberPhone" name="subscriberPhone" class="w-full border rounded px-3 py-2" required>
                 </div>
                 <div class="flex justify-end">
-                    <button type="button" class="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2" onclick="closeInsertSubscriberModal()">Annuler</button>
+                    <button type="button" class="bg-gray-300 text-gray-700 px-4 py-2 rounded mr-2" onclick="closeModal("")">Annuler</button>
                     <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" onclick="submitSubscriberForm()">Créer</button>
 
                 </div>
             </form>
         `;
-            }
+            
         }
 
         function submitSubscriberForm() {
@@ -275,7 +337,7 @@
         }
         // Function to hide the modal
         function closeInsertSubscriberModal() {
-            const modal = document.getElementById('modal');
+            const modal = document.getElementById('createSubscriberForm');
             modal.classList.add('hidden');
         }
 
@@ -309,107 +371,6 @@
                     break;
             }
         }
-
-        // Render documents to the table
-        function renderDocuments(documents) {
-            const documentsTable = document.getElementById('documentsList');
-            // fetchDocuments(1);
-            documentsTable.innerHTML = '';  // Clear existing data
-
-            documents.forEach(doc => {
-                const row = document.createElement('tr');
-
-                const titleCell = document.createElement('td');
-                titleCell.textContent = doc.title;  // Replace with actual document properties
-                row.appendChild(titleCell);
-
-                const authorCell = document.createElement('td');
-                authorCell.textContent = doc.author;  // Replace with actual document properties
-                row.appendChild(authorCell);
-
-                const typeCell = document.createElement('td');
-                typeCell.textContent = doc.type;  // Replace with actual document properties
-                row.appendChild(typeCell);
-
-                const availabilityCell = document.createElement('td');
-                availabilityCell.textContent = doc.availability;  // Replace with actual document properties
-                row.appendChild(availabilityCell);
-
-                const actionsCell = document.createElement('td');
-                actionsCell.innerHTML = `<button class="btn btn-primary">Edit</button>`;  // Add actions as needed
-                row.appendChild(actionsCell);
-
-                documentsTable.appendChild(row);
-            });
-        }
-        // Function to render pagination controls
-        function renderPagination(currentPage, totalDocuments, perPage) {
-            const totalPages = Math.ceil(totalDocuments / perPage);
-            const paginationContainer = document.getElementById('pagination');
-
-            paginationContainer.innerHTML = ''; // Clear existing pagination
-
-            // Create previous page button
-            if (currentPage > 1) {
-                const prevButton = document.createElement('button');
-                prevButton.textContent = 'Previous';
-                prevButton.onclick = () => fetchDocuments(currentPage - 1);
-                paginationContainer.appendChild(prevButton);
-            }
-
-            // Create page buttons
-            for (let page = 1; page <= totalPages; page++) {
-                const pageButton = document.createElement('button');
-                pageButton.textContent = page;
-                pageButton.onclick = () => fetchDocuments(page);
-                if (page === currentPage) {
-                    pageButton.disabled = true; // Disable the current page button
-                }
-                paginationContainer.appendChild(pageButton);
-            }
-
-            // Create next page button
-            if (currentPage < totalPages) {
-                const nextButton = document.createElement('button');
-                nextButton.textContent = 'Next';
-                nextButton.onclick = () => fetchDocuments(currentPage + 1);
-                paginationContainer.appendChild(nextButton);
-            }
-        }
-
-        function updatePaginationButtons(documentsData) {
-            const prevButton = document.getElementById('prevPage');
-            const nextButton = document.getElementById('nextPage');
-
-            // Disable prev button on the first page
-            prevButton.disabled = documentsData.current_page === 1;
-
-            // Disable next button on the last page
-            nextButton.disabled = documentsData.current_page === documentsData.total_pages;
-        }
-
-        // Function to fetch documents with pagination
-        async function fetchDocuments(page) {
-            try {
-                const perPage = 10;  // Number of documents per page
-                const response = await fetch(`/api/documents/?page=${page}&per_page=${perPage}`);
-                const data = await response.json();
-
-                if (data.documents && Array.isArray(data.documents)) {
-                    renderDocuments(data.documents);
-                    renderPagination(data.pagination.page, data.pagination.total_documents, data.pagination.per_page);
-                } else {
-                    console.error('Invalid data format for documents:', data);
-                }
-            } catch (error) {
-                console.error('Error fetching documents:', error);
-            }
-        }
-        // Call this to load the first page on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchDocuments(1, 10);  // Load first page with 10 documents per page
-        });
-
 
         // Render Subscribers data
         function renderSubscribers(subscribers) {
@@ -506,11 +467,6 @@
             modal.classList.remove('hidden');
         }
 
-        // Function to close the modal
-        function closeModal() {
-            const modal = document.getElementById('subscriberDetailsModal');
-            modal.classList.add('hidden');
-        }
 
         function deleteSubscriber(subscriberId) {
             Swal.fire({
@@ -646,11 +602,452 @@
             modal.style.display = 'none';
         }
 
+        // Document Management Functions
+        async function loadDocuments(page = 1) {
+            try {
+                const response = await fetch(`/api/documents?page=${page}&per_page=10`);
+                const data = await response.json();
+                renderDocuments(data.documents);
+                renderDocumentPagination(data.pagination);
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                Swal.fire('Error', 'Failed to load documents', 'error');
+            }
+        }
+
+        function renderDocuments(documents) {
+            const tbody = document.getElementById('documentsList');
+            tbody.innerHTML = '';
+
+            documents.forEach(doc => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2">${doc.title}</td>
+                    <td class="p-2">${doc.author}</td>
+                    <td class="p-2">${doc.type}</td>
+                    <td class="p-2">${doc.isbn || '-'}</td>
+                    <td class="p-2">${doc.publication_year}</td>
+                    <td class="p-2">
+                        <span class="px-2 py-1 rounded ${doc.available ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                            ${doc.available ? 'Disponible' : 'Emprunté'}
+                        </span>
+                    </td>
+                    <td class="p-2 space-x-2">
+                        <button onclick="openEditDocumentModal('${doc._id}')" class="bg-yellow-500 text-white px-3 py-1 rounded">
+                            Modifier
+                        </button>
+                        <button onclick="deleteDocument('${doc._id}')" class="bg-red-500 text-white px-3 py-1 rounded">
+                            Supprimer
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderDocumentPagination(pagination) {
+            const container = document.getElementById('documentPagination');
+            const totalPages = Math.ceil(pagination.total_documents / pagination.per_page);
+
+            let html = '';
+            if (pagination.page > 1) {
+                html += `<button onclick="loadDocuments(${pagination.page - 1})" class="px-3 py-1 bg-blue-500 text-white rounded">Previous</button>`;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button onclick="loadDocuments(${i})" class="px-3 py-1 ${pagination.page === i ? 'bg-blue-700' : 'bg-blue-500'} text-white rounded">${i}</button>`;
+            }
+
+            if (pagination.page < totalPages) {
+                html += `<button onclick="loadDocuments(${pagination.page + 1})" class="px-3 py-1 bg-blue-500 text-white rounded">Next</button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        async function createDocument(data) {
+            try {
+                const response = await fetch('/api/documents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('Failed to create document');
+
+                Swal.fire('Success', 'Document created successfully', 'success');
+                loadDocuments();
+                closeModal();
+            } catch (error) {
+                console.error('Error creating document:', error);
+                Swal.fire('Error', 'Failed to create document', 'error');
+            }
+        }
+
+        async function updateDocument() {
+            const docId = document.getElementById('editDocumentForm').dataset.docId;
+            const data = {
+                title: document.getElementById('editDocTitle').value,
+                author: document.getElementById('editDocAuthor').value,
+                type: document.getElementById('editDocType').value,
+                isbn: document.getElementById('editDocISBN').value,
+                publication_year: document.getElementById('editDocYear').value
+            };
+
+            try {
+                const response = await fetch(`/api/documents/${docId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) throw new Error('Failed to update document');
+
+                Swal.fire('Success', 'Document updated successfully', 'success');
+                loadDocuments();
+                closeEditDocumentModal();
+            } catch (error) {
+                console.error('Error updating document:', error);
+                Swal.fire('Error', 'Failed to update document', 'error');
+            }
+        }
+
+        async function deleteDocument(docId) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/documents/${docId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) throw new Error('Failed to delete document');
+
+                    Swal.fire('Deleted!', 'Document has been deleted.', 'success');
+                    loadDocuments();
+                } catch (error) {
+                    console.error('Error deleting document:', error);
+                    Swal.fire('Error', 'Failed to delete document', 'error');
+                }
+            }
+        }
+
+        // Loan Management Functions
+        async function loadLoans() {
+            try {
+                const response = await fetch('/api/loans');
+                const loans = await response.json();
+                renderLoans(loans);
+            } catch (error) {
+                console.error('Error loading loans:', error);
+                Swal.fire('Error', 'Failed to load loans', 'error');
+            }
+        }
+
+        function renderLoans(loans) {
+            const tbody = document.getElementById('loansList');
+            tbody.innerHTML = '';
+
+            loans.forEach(loan => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2">${loan.subscriber_name}</td>
+                    <td class="p-2">${loan.document_title}</td>
+                    <td class="p-2">${new Date(loan.loan_date).toLocaleDateString()}</td>
+                    <td class="p-2">${new Date(loan.due_date).toLocaleDateString()}</td>
+                    <td class="p-2">
+                        <span class="px-2 py-1 rounded ${loan.status === 'active' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}">
+                            ${loan.status === 'active' ? 'En cours' : 'Retourné'}
+                        </span>
+                    </td>
+                    <td class="p-2 space-x-2">
+                        ${loan.status === 'active' ? `
+                            <button onclick="returnLoan('${loan._id}')" class="bg-blue-500 text-white px-3 py-1 rounded">
+                                Retourner
+                            </button>
+                        ` : ''}
+                        <button onclick="deleteLoan('${loan._id}')" class="bg-red-500 text-white px-3 py-1 rounded">
+                            Supprimer
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadLoanFormData() {
+            try {
+                // Load subscribers
+                const subscribersResponse = await fetch('/api/subscribers');
+                const subscribers = await subscribersResponse.json();
+                const subscriberSelect = document.getElementById('loanSubscriber');
+                subscriberSelect.innerHTML = '<option value="">Sélectionner un abonné</option>';
+                subscribers.forEach(sub => {
+                    subscriberSelect.innerHTML += `<option value="${sub._id}">${sub.first_name} ${sub.last_name}</option>`;
+                });
+
+                // Load available documents
+                const documentsResponse = await fetch('/api/documents');
+                const documentsData = await documentsResponse.json();
+                const documents = documentsData.documents;
+                const documentSelect = document.getElementById('loanDocument');
+                documentSelect.innerHTML = '<option value="">Sélectionner un document</option>';
+                documents.filter(doc => doc.available).forEach(doc => {
+                    documentSelect.innerHTML += `<option value="${doc._id}">${doc.title} (${doc.type})</option>`;
+                });
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                Swal.fire('Error', 'Failed to load form data', 'error');
+            }
+        }
+
+        async function createLoan() {
+            const subscriberId = document.getElementById('loanSubscriber').value;
+            const documentId = document.getElementById('loanDocument').value;
+
+            if (!subscriberId || !documentId) {
+                Swal.fire('Error', 'Please select both subscriber and document', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/loans', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subscriber_id: subscriberId,
+                        document_id: documentId
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create loan');
+
+                Swal.fire('Success', 'Loan created successfully', 'success');
+                closeLoanModal();
+                loadLoans();
+            } catch (error) {
+                console.error('Error creating loan:', error);
+                Swal.fire('Error', 'Failed to create loan', 'error');
+            }
+        }
+
+        async function returnLoan(loanId) {
+            try {
+                const response = await fetch(`/api/loans/${loanId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'returned' })
+                });
+
+                if (!response.ok) throw new Error('Failed to return loan');
+
+                Swal.fire('Success', 'Document returned successfully', 'success');
+                loadLoans();
+            } catch (error) {
+                console.error('Error returning loan:', error);
+                Swal.fire('Error', 'Failed to return loan', 'error');
+            }
+        }
+
+        async function deleteLoan(loanId) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/loans/${loanId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) throw new Error('Failed to delete loan');
+
+                    Swal.fire('Deleted!', 'Loan has been deleted.', 'success');
+                    loadLoans();
+                } catch (error) {
+                    console.error('Error deleting loan:', error);
+                    Swal.fire('Error', 'Failed to delete loan', 'error');
+                }
+            }
+        }
+
+        // Modal functions
+        function showModal(formType) {
+            switch (formType) {
+                case 'subscriberForm':
+                    const subscriberModal = document.getElementById('subscriberFormModal');
+                    const subscriberContent = document.getElementById('subscriberModalContent');
+                    subscriberModal.classList.remove('hidden');
+                    showModalSubscriberForm(subscriberContent);
+                    break;
+                case 'documentForm':
+                    const documentModal = document.getElementById('documentFormModal');
+                    const documentContent = document.getElementById('documentModalContent');
+                    documentModal.classList.remove('hidden');
+                    showDocumentForm(documentContent);
+                    break;
+                case 'loanForm':
+                    const loanModal = document.getElementById('loanFormModal');
+                    loanModal.classList.remove('hidden');
+                    showLoanForm();
+                    break;
+            }
+        }
+
+
+        function showDocumentForm(modalContent) {
+            modalContent.innerHTML = `
+        <h2 class="text-lg font-bold mb-4">Nouveau Document</h2>
+        <form id="newDocumentForm" class="space-y-4">
+            <div>
+                <label class="block font-medium text-gray-700">Titre</label>
+                <input type="text" id="docTitle" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Auteur</label>
+                <input type="text" id="docAuthor" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Type</label>
+                <select id="docType" class="w-full border rounded px-3 py-2">
+                    <option value="book">Livre</option>
+                    <option value="magazine">Magazine</option>
+                    <option value="cd">CD</option>
+                    <option value="dvd">DVD</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">ISBN</label>
+                <input type="text" id="docISBN" class="w-full border rounded px-3 py-2">
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Année de publication</label>
+                <input type="number" id="docYear" class="w-full border rounded px-3 py-2" required>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeModal('documentFormModal')" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
+                <button type="button" onclick="submitDocument()" class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
+            </div>
+        </form>
+    `;
+        }
+        // Add the submit document function
+        async function submitDocument() {
+            const documentData = {
+                title: document.getElementById('docTitle').value,
+                author: document.getElementById('docAuthor').value,
+                type: document.getElementById('docType').value,
+                isbn: document.getElementById('docISBN').value,
+                publication_year: document.getElementById('docYear').value,
+            };
+
+            try {
+                const response = await fetch('/api/documents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(documentData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create document');
+                }
+
+                const result = await response.json();
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Document created successfully',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                closeModal();
+                loadDocuments(1); // Refresh the documents list
+            } catch (error) {
+                console.error('Error creating document:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to create document',
+                    icon: 'error'
+                });
+            }
+        }
+
+
+        function showLoanForm() {
+            const modalContent = document.querySelector('#modal > div');
+            modalContent.innerHTML = `
+                <h2 class="text-lg font-bold mb-4">Nouvel Emprunt</h2>
+                <form id="newLoanForm" class="space-y-4">
+                    <div>
+                        <label class="block font-medium text-gray-700">Abonné</label>
+                        <select id="loanSubscriber" class="w-full border rounded px-3 py-2" required>
+                            <option value="">Sélectionner un abonné</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700">Document</label>
+                        <select id="loanDocument" class="w-full border rounded px-3 py-2" required>
+                            <option value="">Sélectionner un document</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" onclick="closeModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
+                        <button type="button" onclick="createLoan()" class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
+                    </div>
+                </form>
+            `;
+            loadLoanFormData();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function closeSubscriberDetailModal() {
+            document.getElementById('subscriberDetailsModal').classList.add('hidden');
+        }
+
 
         // Initialize application
         document.addEventListener('DOMContentLoaded', () => {
             showSection('subscribers');
         });
+
+        function showSection(sectionId) {
+            document.querySelectorAll('main section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            switch (sectionId) {
+                case 'subscribers':
+                    fetchSubscribers();
+                    break;
+                case 'documents':
+                    loadDocuments(1);
+                    break;
+                case 'loans':
+                    loadLoans();
+                    break;
+            }
+        }
     </script>
 </body>
 

@@ -151,26 +151,74 @@ def get_documents():
         'pagination': pagination
     })
 
+@app.route('/api/documents/<document_id>', methods=['PUT'])
+def update_document(document_id):
+    try:
+        data = request.json
+        result = mongo.db.documents.update_one(
+            {"_id": ObjectId(document_id)},
+            {"$set": {
+                "title": data.get("title"),
+                "author": data.get("author"),
+                "type": data.get("type"),
+                "isbn": data.get("isbn"),
+                "publication_year": data.get("publication_year"),
+                "available": data.get("available", True)
+            }}
+        )
+        if result.modified_count == 0:
+            return jsonify({"message": "Document not found"}), 404
+        return jsonify({"message": "Document updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to update document", "error": str(e)}), 400
+
+@app.route('/api/documents/<document_id>', methods=['DELETE'])
+def delete_document(document_id):
+    try:
+        # Check if document is currently loaned
+        loan = mongo.db.loans.find_one({
+            "document_id": ObjectId(document_id),
+            "status": "active"
+        })
+        if loan:
+            return jsonify({"message": "Cannot delete document that is currently loaned"}), 400
+        
+        result = mongo.db.documents.delete_one({"_id": ObjectId(document_id)})
+        if result.deleted_count == 0:
+            return jsonify({"message": "Document not found"}), 404
+        return jsonify({"message": "Document deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to delete document", "error": str(e)}), 400
 
 @app.route('/api/documents', methods=['POST'])
-def add_document():
-    data = document_schema.load(request.json)
-    data['available'] = True
-    
-    result = mongo.db.documents.insert_one(data)
-    return jsonify({
-        "message": "Document added successfully",
-        "id": str(result.inserted_id)
-    }), 201
+def create_document():
+    try:
+        data = request.json
+        data['available'] = True  # New documents are always available
+        result = mongo.db.documents.insert_one(data)
+        return jsonify({
+            "message": "Document created successfully",
+            "id": str(result.inserted_id)
+        }), 201
+    except Exception as e:
+        return jsonify({"message": "Failed to create document", "error": str(e)}), 400
+
+@app.route('/api/documents/<document_id>', methods=['GET'])
+def get_document(document_id):
+    try:
+        document = mongo.db.documents.find_one({"_id": ObjectId(document_id)})
+        if not document:
+            return jsonify({"message": "Document not found"}), 404
+        return jsonify(document_schema.dump(document)), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch document", "error": str(e)}), 400
 
 @app.route('/api/loans/', methods=['GET'])
-#@requires_auth
 def get_loans():
     loans = list(mongo.db.loans.find())
     return jsonify(loan_schema.dump(loans, many=True))
 
 @app.route('/api/loans', methods=['POST'])
-#@requires_auth
 def create_loan():
     data = loan_schema.load(request.json)
     
@@ -205,6 +253,92 @@ def create_loan():
             "message": "Loan created successfully"})
     except Exception as e:
         return jsonify({"error": str(e)})
+
+@app.route('/api/loans/<loan_id>', methods=['GET'])
+def get_loan(loan_id):
+    try:
+        loan = mongo.db.loans.find_one({"_id": ObjectId(loan_id)})
+        if not loan:
+            return jsonify({"message": "Loan not found"}), 404
+        return jsonify(loan_schema.dump(loan)), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch loan", "error": str(e)}), 400
+
+@app.route('/api/loans/<loan_id>', methods=['PUT'])
+def update_loan(loan_id):
+    try:
+        data = request.json
+        loan = mongo.db.loans.find_one({"_id": ObjectId(loan_id)})
+        if not loan:
+            return jsonify({"message": "Loan not found"}), 404
+
+        # Update loan status
+        update_data = {
+            "status": data.get("status", loan["status"])
+        }
+        
+        # If returning the document (status changed to 'returned')
+        if data.get("status") == "returned" and loan["status"] == "active":
+            # Update document availability
+            mongo.db.documents.update_one(
+                {"_id": loan["document_id"]},
+                {"$set": {"available": True}}
+            )
+            
+            # Update subscriber's current loans
+            mongo.db.subscribers.update_one(
+                {"_id": loan["subscriber_id"]},
+                {"$pull": {"current_loans": {"document_id": loan["document_id"]}}}
+            )
+            
+            # Set return date
+            update_data["return_date"] = datetime.utcnow()
+
+        result = mongo.db.loans.update_one(
+            {"_id": ObjectId(loan_id)},
+            {"$set": update_data}
+        )
+        
+        return jsonify({"message": "Loan updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to update loan", "error": str(e)}), 400
+
+@app.route('/api/loans/<loan_id>', methods=['DELETE'])
+def delete_loan(loan_id):
+    try:
+        loan = mongo.db.loans.find_one({"_id": ObjectId(loan_id)})
+        if not loan:
+            return jsonify({"message": "Loan not found"}), 404
+            
+        # Can only delete returned loans
+        if loan["status"] == "active":
+            return jsonify({"message": "Cannot delete active loan"}), 400
+            
+        result = mongo.db.loans.delete_one({"_id": ObjectId(loan_id)})
+        return jsonify({"message": "Loan deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to delete loan", "error": str(e)}), 400
+
+@app.route('/api/loans/subscriber/<subscriber_id>', methods=['GET'])
+def get_subscriber_loans(subscriber_id):
+    try:
+        loans = list(mongo.db.loans.find({
+            "subscriber_id": ObjectId(subscriber_id)
+        }).sort("loan_date", -1))
+        return jsonify(loan_schema.dump(loans, many=True)), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch subscriber loans", "error": str(e)}), 400
+
+@app.route('/api/loans/document/<document_id>', methods=['GET'])
+def get_document_loans(document_id):
+    try:
+        loans = list(mongo.db.loans.find({
+            "document_id": ObjectId(document_id)
+        }).sort("loan_date", -1))
+        return jsonify(loan_schema.dump(loans, many=True)), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch document loans", "error": str(e)}), 400
+    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
