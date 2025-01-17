@@ -125,32 +125,42 @@ def get_subscriber(subscriber_id):
 
 @app.route('/api/documents/', methods=['GET'])
 def get_documents():
-    # Get query parameters for pagination (default to page 1 and 10 items per page)
-    page = int(request.args.get('page', 1))  # Default to page 1
-    per_page = int(request.args.get('per_page', 10))  # Default to 10 items per page
+    try:
+        # Get query parameters for pagination
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
 
-    # Calculate the skip value
-    skip = (page - 1) * per_page
+        # Get total documents
+        total_documents = mongo.db.documents.count_documents({})
+        total_pages = max(1, (total_documents + per_page - 1) // per_page)
 
-    # Query documents with pagination
-    documents = list(mongo.db.documents.find().skip(skip).limit(per_page))
+        # Calculate skip
+        skip = (page - 1) * per_page
 
-    # Get the total number of documents
-    total_documents = mongo.db.documents.count_documents({})
+        # Query documents with sorting (newest first)
+        documents = list(mongo.db.documents.find().sort('_id', -1).skip(skip).limit(per_page))
 
-    # Prepare pagination metadata
-    pagination = {
-        'page': page,
-        'per_page': per_page,
-        'total_documents': total_documents
-    }
+        # Convert ObjectIds to strings in documents
+        for doc in documents:
+            doc['_id'] = str(doc['_id'])
 
-    # Return the documents and pagination metadata
-    return jsonify({
-        'documents': document_schema.dump(documents, many=True),
-        'pagination': pagination
-    })
+        return jsonify({
+            "documents": documents,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total_documents": total_documents,
+                "total_pages": total_pages
+            }
+        })
 
+    except Exception as e:
+        print(f"Error in get_documents: {e}")
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e)
+        }), 500
+    
 @app.route('/api/documents/<document_id>', methods=['PUT'])
 def update_document(document_id):
     try:
@@ -162,7 +172,8 @@ def update_document(document_id):
                 "author": data.get("author"),
                 "type": data.get("type"),
                 "isbn": data.get("isbn"),
-                "publication_year": data.get("publication_year"),
+                "genre": data.get("genre"),
+                "publication_date": data.get("publication_date"),
                 "available": data.get("available", True)
             }}
         )
@@ -209,9 +220,15 @@ def get_document(document_id):
         document = mongo.db.documents.find_one({"_id": ObjectId(document_id)})
         if not document:
             return jsonify({"message": "Document not found"}), 404
-        return jsonify(document_schema.dump(document)), 200
+
+        # Convert ObjectId to string
+        document['_id'] = str(document['_id'])
+        
+        return jsonify(document), 200
     except Exception as e:
+        print(f"Error in get_document: {e}")
         return jsonify({"message": "Failed to fetch document", "error": str(e)}), 400
+
 
 @app.route('/api/loans/', methods=['GET'])
 def get_loans():
