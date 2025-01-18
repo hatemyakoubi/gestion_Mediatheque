@@ -185,7 +185,7 @@
         <section id="loans" class="hidden space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold">Gestion des Emprunts</h2>
-                <button onclick="showModal('loanForm')" class="bg-blue-500 text-white px-4 py-2 rounded">
+                <button onclick="showLoanModal()" class="bg-blue-500 text-white px-4 py-2 rounded">
                     Nouvel Emprunt
                 </button>
             </div>
@@ -224,6 +224,14 @@
                                 <!-- Filled dynamically -->
                             </select>
                         </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Date d'emprunt</label>
+                            <input type="date" id="loanDate" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Date de retour prévue</label>
+                            <input type="date" id="returnDate" class="w-full border rounded px-3 py-2" required>
+                        </div>
                         <div class="flex justify-end space-x-2">
                             <button type="button" onclick="closeLoanModal()"
                                 class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
@@ -233,6 +241,7 @@
                     </form>
                 </div>
             </div>
+
         </section>
 
     </main>
@@ -852,10 +861,10 @@
                 Swal.fire('Error', 'Failed to load document details', 'error');
             }
         }
-       
-       
+
+
         // Loan Management Functions
-       
+
         async function loadLoans() {
             try {
                 const response = await fetch('/api/loans');
@@ -924,12 +933,30 @@
             }
         }
 
+        function showLoanModal() {
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+            document.getElementById('loanDate').value = today;
+            document.getElementById('returnDate').value = twoWeeksLater;
+
+            document.getElementById('loanFormModal').classList.remove('hidden');
+            loadLoanFormData();
+        }
+
+        function closeLoanModal() {
+            document.getElementById('loanFormModal').classList.add('hidden');
+        }
+
         async function createLoan() {
             const subscriberId = document.getElementById('loanSubscriber').value;
             const documentId = document.getElementById('loanDocument').value;
+            const loanDate = document.getElementById('loanDate').value;
+            const returnDate = document.getElementById('returnDate').value;
 
-            if (!subscriberId || !documentId) {
-                Swal.fire('Error', 'Please select both subscriber and document', 'error');
+            if (!subscriberId || !documentId || !loanDate || !returnDate) {
+                Swal.fire('Error', 'Please fill all required fields', 'error');
                 return;
             }
 
@@ -939,18 +966,23 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         subscriber_id: subscriberId,
-                        document_id: documentId
+                        document_id: documentId,
+                        loan_date: loanDate,
+                        due_date: returnDate
                     })
                 });
 
-                if (!response.ok) throw new Error('Failed to create loan');
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to create loan');
+                }
 
-                Swal.fire('Success', 'Loan created successfully', 'success');
+                await Swal.fire('Success', 'Loan created successfully', 'success');
                 closeLoanModal();
                 loadLoans();
             } catch (error) {
                 console.error('Error creating loan:', error);
-                Swal.fire('Error', 'Failed to create loan', 'error');
+                Swal.fire('Error', error.message, 'error');
             }
         }
 
@@ -1109,30 +1141,39 @@
             }
         }
 
-
         function showLoanForm() {
             const modalContent = document.querySelector('#modal > div');
             modalContent.innerHTML = `
-                <h2 class="text-lg font-bold mb-4">Nouvel Emprunt</h2>
-                <form id="newLoanForm" class="space-y-4">
-                    <div>
-                        <label class="block font-medium text-gray-700">Abonné</label>
-                        <select id="loanSubscriber" class="w-full border rounded px-3 py-2" required>
-                            <option value="">Sélectionner un abonné</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-medium text-gray-700">Document</label>
-                        <select id="loanDocument" class="w-full border rounded px-3 py-2" required>
-                            <option value="">Sélectionner un document</option>
-                        </select>
-                    </div>
-                    <div class="flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
-                        <button type="button" onclick="createLoan()" class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
-                    </div>
-                </form>
-            `;
+        <h2 class="text-lg font-bold mb-4">Nouvel Emprunt</h2>
+        <form id="newLoanForm" class="space-y-4">
+            <div>
+                <label class="block font-medium text-gray-700">Abonné</label>
+                <select id="loanSubscriber" class="w-full border rounded px-3 py-2" required>
+                    <option value="">Sélectionner un abonné</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Document</label>
+                <select id="loanDocument" class="w-full border rounded px-3 py-2" required>
+                    <option value="">Sélectionner un document</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Date d'emprunt</label>
+                <input type="date" id="loanDate" class="w-full border rounded px-3 py-2" 
+                       required value="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div>
+                <label class="block font-medium text-gray-700">Date de retour prévue</label>
+                <input type="date" id="returnDate" class="w-full border rounded px-3 py-2" 
+                       required value="${new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Annuler</button>
+                <button type="button" onclick="createLoan()" class="bg-blue-500 text-white px-4 py-2 rounded">Créer</button>
+            </div>
+        </form>
+    `;
             loadLoanFormData();
         }
 

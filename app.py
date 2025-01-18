@@ -232,44 +232,115 @@ def get_document(document_id):
 
 @app.route('/api/loans/', methods=['GET'])
 def get_loans():
-    loans = list(mongo.db.loans.find())
-    return jsonify(loan_schema.dump(loans, many=True))
+    try:
+        # Use aggregation to join with subscribers and documents collections
+        pipeline = [
+            {
+                '$lookup': {
+                    'from': 'subscribers',
+                    'localField': 'subscriber_id',
+                    'foreignField': '_id',
+                    'as': 'subscriber'
+                }
+            },
+            {
+                '$lookup': {
+                    'from': 'documents',
+                    'localField': 'document_id',
+                    'foreignField': '_id',
+                    'as': 'document'
+                }
+            },
+            {
+                '$unwind': '$subscriber'
+            },
+            {
+                '$unwind': '$document'
+            },
+            {
+                '$project': {
+                    '_id': 1,
+                    'loan_date': 1,
+                    'due_date': 1,
+                    'status': 1,
+                    'subscriber_name': {
+                        '$concat': ['$subscriber.first_name', ' ', '$subscriber.last_name']
+                    },
+                    'document_title': '$document.title'
+                }
+            }
+        ]
+
+        loans = list(mongo.db.loans.aggregate(pipeline))
+
+        # Convert ObjectId to string
+        for loan in loans:
+            loan['_id'] = str(loan['_id'])
+
+        return jsonify(loans)
+    except Exception as e:
+        print(f"Error fetching loans: {e}")
+        return jsonify({"error": "Failed to fetch loans"}), 500
+
+
 
 @app.route('/api/loans', methods=['POST'])
 def create_loan():
-    data = loan_schema.load(request.json)
-    
-    # Verify document availability
-    document = mongo.db.documents.find_one({'_id': ObjectId(data['document_id'])})
-    if not document or not document.get('available', False):
-        return jsonify({"error": "Document not available"}), 400
-    
-    # Create loan record
-    loan_data = {
-        'subscriber_id': ObjectId(data['subscriber_id']),
-        'document_id': ObjectId(data['document_id']),
-        'loan_date': datetime.utcnow(),
-        'due_date': datetime.utcnow() + timedelta(days=14),
-        'status': 'active'
-    }
-    
-    # Update document availability and subscriber's current loans
     try:
-        mongo.db.documents.update_one(
-            {'_id': ObjectId(data['document_id'])},
-            {'$set': {'available': False}}
-        )
+        data = request.json
         
-        mongo.db.subscribers.update_one(
-            {'_id': ObjectId(data['subscriber_id'])},
-            {'$push': {'current_loans': loan_data}}
-        )
+        # Verify document availability
+        document = mongo.db.documents.find_one({'_id': ObjectId(data['document_id'])})
+        if not document or not document.get('available', False):
+            return jsonify({"error": "Document not available"}), 400
         
-        result = mongo.db.loans.insert_one(loan_data)
-        return jsonify({
-            "message": "Loan created successfully"})
+        # Parse dates
+        loan_date = datetime.strptime(data['loan_date'], '%Y-%m-%d')
+        due_date = datetime.strptime(data['due_date'], '%Y-%m-%d')
+        
+        # Validate dates
+        if loan_date > due_date:
+            return jsonify({"error": "Return date must be after loan date"}), 400
+        
+        # Create loan record
+        loan_data = {
+            'subscriber_id': ObjectId(data['subscriber_id']),
+            'document_id': ObjectId(data['document_id']),
+            'loan_date': loan_date,
+            'due_date': due_date,
+            'status': 'active'
+        }
+        
+        # Update document availability and subscriber's current loans
+        try:
+            mongo.db.documents.update_one(
+                {'_id': ObjectId(data['document_id'])},
+                {'$set': {'available': False}}
+            )
+            
+            mongo.db.subscribers.update_one(
+                {'_id': ObjectId(data['subscriber_id'])},
+                {'$push': {'current_loans': loan_data}}
+            )
+            
+            result = mongo.db.loans.insert_one(loan_data)
+            return jsonify({
+                "message": "Loan created successfully",
+                "id": str(result.inserted_id)
+            }), 201
+            
+        except Exception as e:
+            # Rollback document availability if loan creation fails
+            mongo.db.documents.update_one(
+                {'_id': ObjectId(data['document_id'])},
+                {'$set': {'available': True}}
+            )
+            raise e
+            
+    except ValueError as e:
+        return jsonify({"error": "Invalid date format"}), 400
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/loans/<loan_id>', methods=['GET'])
 def get_loan(loan_id):
