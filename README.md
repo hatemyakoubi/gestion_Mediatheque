@@ -132,3 +132,17 @@ docker-compose ps
    docker-compose down
    docker-compose up --build -d
    ```
+
+5. **Test unit**:
+   ```bash
+   # Run tests:
+   #These tests cover:
+   #CRUD operations for all entities
+   #Pagination for documents
+   #Business rules cannot delete loaned documents
+   #Date handling in loans
+   #Relationships between entities
+   #Error cases
+
+   pytest
+   ```
